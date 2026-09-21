@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - evidence_store:/app/evidence_store
+      - reports_output:/app/reports_output
+      - db_data:/app/db
+      - ./sample_data:/app/sample_data
+    environment:
+      - APP_ENV=development
+      - APP_DB_URL=sqlite:////app/db/forensic_app.db
+      - EVIDENCE_STORE=/app/evidence_store
+      - REPORTS_DIR=/app/reports_output
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  evidence_store:
+  reports_output:
+  db_data:
